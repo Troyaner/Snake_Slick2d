@@ -2,18 +2,23 @@ package snake;
 
 import org.newdawn.slick.*;
 
+import java.util.Random;
+
 public class SnakeGame extends BasicGame {
     private static final int windowWidth = 600;
     private static final int windowHeight = 600;
+
     private final int blockSize = 20;
-    private Direction direction = Direction.STANDING;
-    private int speed = 0;
-    private int gameFieldX = 20;
-    private int gameFieldY = 20;
+    private int gameFieldX = blockSize;
+    private int gameFieldY = blockSize;
     private int gameFieldWidth = windowWidth - gameFieldX * 2;
     private int gameFieldHeight = windowHeight - gameFieldY * 2;
 
-    Snake snake;
+    private Snake snake;
+    private Block foodBlock;
+    private Direction direction = Direction.STANDING;
+    private Direction lastDirection = Direction.STANDING;
+    private int speed = 0;
 
     public SnakeGame(String title) {
         super(title);
@@ -22,6 +27,7 @@ public class SnakeGame extends BasicGame {
     @Override
     public void init(GameContainer gameContainer) throws SlickException {
         snake = new Snake(gameFieldWidth, gameFieldHeight, blockSize);
+        setRandomFoodBlock();
     }
 
     @Override
@@ -31,6 +37,8 @@ public class SnakeGame extends BasicGame {
         } else {
             speed = 0;
             setHeadPosition();
+            didHitFoodBlock();
+            //didHitSnake();
         }
     }
 
@@ -38,10 +46,27 @@ public class SnakeGame extends BasicGame {
     public void render(GameContainer gameContainer, Graphics graphics) throws SlickException {
         snake.draw(graphics);
         graphics.drawRect(gameFieldX, gameFieldY, gameFieldWidth, gameFieldHeight);
+        graphics.drawRect(foodBlock.x, foodBlock.y, blockSize, blockSize);
     }
 
-    public void setRandomFoodRectangle() {
+    public void setRandomFoodBlock() {
+        Random random = new Random();
+        int randomX = random.nextInt(this.gameFieldWidth) + blockSize;
+        // round to the nearest 20 (because the blocksize is 20)
+        randomX = Math.round(randomX / blockSize) * blockSize;
 
+        int randomY = random.nextInt(this.gameFieldHeight) + blockSize;
+        // round to the nearest 10
+        randomY = Math.round(randomY / blockSize) * blockSize;
+
+        foodBlock = new Block(randomX, randomY, blockSize);
+    }
+
+    public void didHitFoodBlock() {
+        if (snake.head.x == foodBlock.x && snake.head.y == foodBlock.y) {
+            snake.ate(foodBlock);
+            setRandomFoodBlock();
+        }
     }
 
     public void setHeadPosition() {
@@ -56,8 +81,8 @@ public class SnakeGame extends BasicGame {
             }
             case DOWN: {
                 int newHeadPositionY = snake.head.y + blockSize;
-                if (newHeadPositionY >= gameFieldHeight) {
-                    newHeadPositionY = 0;
+                if (newHeadPositionY > gameFieldHeight) {
+                    newHeadPositionY = gameFieldY;
                 }
                 snake.move(Direction.DOWN, newHeadPositionY);
                 break;
@@ -72,8 +97,8 @@ public class SnakeGame extends BasicGame {
             }
             case RIGHT: {
                 int newHeadPositionX = snake.head.x + blockSize;
-                if (newHeadPositionX >= gameFieldWidth) {
-                    newHeadPositionX = 0;
+                if (newHeadPositionX > gameFieldWidth) {
+                    newHeadPositionX = gameFieldX;
                 }
                 snake.move(Direction.RIGHT, newHeadPositionX);
                 break;
@@ -88,19 +113,27 @@ public class SnakeGame extends BasicGame {
     public void keyPressed(int key, char c) {
         switch (key) {
             case Input.KEY_UP: {
-                this.direction = Direction.UP;
+                if (this.direction != Direction.DOWN) {
+                    this.direction = Direction.UP;
+                }
                 break;
             }
             case Input.KEY_DOWN: {
-                this.direction = Direction.DOWN;
+                if (this.direction != Direction.UP) {
+                    this.direction = Direction.DOWN;
+                }
                 break;
             }
             case Input.KEY_LEFT: {
-                this.direction = Direction.LEFT;
+                if (this.direction != Direction.RIGHT) {
+                    this.direction = Direction.LEFT;
+                }
                 break;
             }
             case Input.KEY_RIGHT: {
-                this.direction = Direction.RIGHT;
+                if (this.direction != Direction.LEFT) {
+                    this.direction = Direction.RIGHT;
+                }
                 break;
             }
         }
